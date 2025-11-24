@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -16,8 +17,12 @@
     <button id="startAudio" style="display:none">Enable Audio</button>
     <div id="app"></div>
     
+    <!-- VJ p5js : https://editor.p5js.org/feliciatiffany/sketches/4HmfQk1Fj -->
+    <!-- DJ p5js : https://editor.p5js.org/feliciatiffany/sketches/9vIniii-M -->
     <script>
+      // let ws = new WebSocket('ws://localhost:3000');
       let ws = new WebSocket('wss://collaborative-djvj.onrender.com');
+
       const roleEl = document.getElementById('role');
       const statusEl = document.getElementById('status');
       const startAudioBtn = document.getElementById('startAudio');
@@ -27,11 +32,12 @@
       let reverbFX, delayFX, resonanceFX;
       let tri, cir, star, plus;
       const margin = 80;
-      let draggedShape = null;
+      let draggedShape = null; // FIX: declare to avoid implicit global
 
-      // Unique ID for each player
+      //  unique ID for each player
       let myId = Math.random().toString(36).slice(2); 
 
+      // for debugging, check if open, error, or close. First connection check
       ws.onopen = () => {
         console.log('WebSocket connection established');
         ws.send(JSON.stringify({ type: 'join', id: myId })); // Send the player ID to join
@@ -51,39 +57,46 @@
         try {
           const msg = JSON.parse(event.data);
 
-          // Assign role (DJ or VJ)
+          // help with role assignment 
           if (msg.type === 'assign' && !role) {
+            // Assign the role (DJ or VJ)
             role = msg.role;
+            // displayed on interface
             roleEl.textContent = 'role: ' + role;
             statusEl.textContent = 'ws: connected';
 
+            // Initialize shapes and audio based on role
             if (role === 'dj') {
               startAudioBtn.style.display = 'inline-block';
-              loadDJSound(); // Load sound at the beginning for DJ
+              // don't know why the loadDJ sound always have problem
+              // loadDJSound();
+              // loopSound.setVolume(0); // FIX: don't touch before loaded
+              // Initialize audio effects, will be changed later
+              // reverbFX = new p5.Reverb(); // will create FX after sound exists
+              // delayFX = new p5.Delay();
+              // resonanceFX = new p5.LowPass();
+              // Apply effects on the sound
+              // resonanceFX.process(loopSound);
+              // delayFX.process(loopSound, 0, 0, 1500);
+              // reverbFX.process(loopSound, 0, 0);
+              // reverbFX.drywet(0);
               setupShapes();
             } else if (role === 'vj') {
-              loadDJSound(); // Load sound at the beginning for VJ
               setupShapes();
             }
           }
 
-          // Handle state updates from the other player
+          // Ghost shape data handle : receiving and have position updates from the other player
           if (msg.type === 'state' && msg.role !== role) {
             ghostShapes = msg.shapes || null;
-            if (role === 'vj') {
-              // VJ: Update visual based on DJ shapes
-              updateVisualFromShapes(ghostShapes);
-            } else if (role === 'dj') {
-              // DJ: Update sound based on VJ shapes
-              updateSoundFromShapes(ghostShapes);
-            }
+            console.log('Received state from other player:', ghostShapes);
           }
         } catch (error) {
           console.error('Error processing WebSocket message:', error);
         }
       };
 
-      // Initialize canvas and shapes
+      // p5.js setup function
       function setup() {
         createCanvas(windowWidth, windowHeight); 
         textAlign(CENTER);
@@ -91,6 +104,7 @@
         setupShapes();  
       }
 
+      // Function to initialize shapes (same for both DJ and VJ)
       function setupShapes() {
         tri = { x: width * 0.25, y: height * 0.6, size: 50, col: color('#F0A533'), type:'triangle' };
         cir = { x: width * 0.75, y: height * 0.3, r: 45, col: color('#0B4B8B'), type:'circle' };
@@ -101,7 +115,7 @@
       function draw() {
         background(30);
 
-        // Draw shapes
+        // Draw shapes. go to function for each shape
         drawTriangleShape(tri);
         drawCircleShape(cir);
         drawStarShape(star);
@@ -112,12 +126,16 @@
 
         // If role is DJ, handle audio control and draw the DJ bar
         if (role === 'dj') {
-          if (!loopSound || !loopSound.isPlaying()) { 
+          //  && loopSound
+          // console.log("DJ role active");
+          if (!loopSound || !loopSound.isPlaying()) { // FIX: guard when loopSound is undefined / not loaded
             startAudioBtn.style.display = 'inline-block';
           }
-
-          // Draw the shared wave
+          console.log ("draw radial wave from DJ");
+          // also draw from VJ
           drawRadialWaveCrazy(); 
+
+          // Update audio from shape positions
           updateAudioFromShapes();  
           drawDJBar();  
         }
@@ -125,68 +143,143 @@
         // If role is VJ, draw visual wave and the VJ bar
         if (role === 'vj') {
           drawRadialWaveCrazy();  
+          
+          // also update audtio from DJ shapes
+          // updateAudioFromShapes();  
+
           drawVJBar(); 
         }
       }
 
-      // Function to load sound for both DJ and VJ roles
+      // Function to load sound for DJ role
       function loadDJSound() {
+        // FIX: load only after userStartAudio(); set up FX and start loop on success
         loopSound = loadSound('assets/djlexCUT.mp3', () => {
           console.log("Sound file loaded successfully.");
+          // Initialize audio effects, will be changed later
           if (!reverbFX) reverbFX = new p5.Reverb();
           if (!delayFX) delayFX = new p5.Delay();
           if (!resonanceFX) resonanceFX = new p5.LowPass();
 
+          // Apply effects on the sound (after it's created)
           resonanceFX.process(loopSound);
           delayFX.process(loopSound, 0, 0, 1500);
           reverbFX.process(loopSound, 2, 2);
           reverbFX.drywet(0);
 
           loopSound.setVolume(0);
-          loopSound.loop(); 
+          loopSound.loop(); // start playback now that it's unlocked + loaded
           startAudioBtn.style.display = 'none';
+          startAudioBtn.disabled = false; // Enable button once the sound is loaded
         }, (error) => {
-          console.error("Error loading sound file:", error); 
-          startAudioBtn.disabled = true;
+          console.error("Error loading sound file:", error); //always go here
+          startAudioBtn.disabled = true;  // Disable button if error occurs
+          alert('Failed to load assets/djlexCUT.mp3. Make sure the file exists and is served from the same origin.');
         });
       }
 
+      // Function to play sound when clicked
       startAudioBtn.onclick = function () {
+        // FIX: unlock audio context first (required by browsers)
         userStartAudio().then(() => {
+          if (!loopSound) {
+            // First click: load + start
+            loadDJSound();
+            return;
+          }
+
           if (loopSound && loopSound.isLoaded()) {
             loopSound.loop();
-            startAudioBtn.style.display = 'none';
+            startAudioBtn.style.display = 'none';  // Hide button after playing sound
+          } else {
+            // always goes here
+            console.error("Sound is not loaded yet!"); 
           }
         }).catch((e) => {
           console.error('Audio unlock failed:', e);
         });
       };
 
+      // Function to draw the DJ bar : blue
       function drawDJBar() {
         noStroke();
         fill("#0A5598");
-        rect(0, height - 120, width, 120);
+        rect(0, height - 120, width, 120);  // Bar across the bottom
         fill(255);
         textAlign(CENTER, CENTER);
         textSize(30);
         text('Drag shapes to control your MUSIC', width / 2, height - 50);
+
         textSize(15);
         fill(220);
         text('Triangle/Volume   Circle/Reverb   Star/Delay   Plus/Resonance', width / 2, height - 90);
       }
 
+      // Function to draw the VJ bar : red
       function drawVJBar() {
         noStroke();
         fill("#BA0113");
-        rect(0, height - 120, width, 120);
+        rect(0, height - 120, width, 120);  // Bar across the bottom
         fill(255);
         textAlign(CENTER, CENTER);
         textSize(30);
         text('Drag shapes to control your WAVE', width / 2, height - 50);
+
         textSize(15);
         fill(220);
         text('Triangle/Power   Circle/Softness   Star/Speed   Plus/Chaos', width / 2, height - 90);
       }
+
+      //  triangle shape
+      function drawTriangleShape(s) {
+        fill(s.col);
+        noStroke();
+        const h = s.size;
+        triangle(s.x - h, s.y + h, s.x + h, s.y + h, s.x, s.y - h);
+      }
+
+      // circle shape
+      function drawCircleShape(s) {
+        fill(s.col);
+        noStroke();
+        ellipse(s.x, s.y, s.r * 2, s.r * 2);
+      }
+
+      // star shape
+      function drawStarShape(s) {
+        push();
+        translate(s.x, s.y);
+        fill(s.col);
+        noStroke();
+        const npoints = 6;
+        const angle = TWO_PI / npoints;
+        const halfAngle = angle / 2.0;
+        beginShape();
+        for (let a = 0; a < TWO_PI; a += angle) {
+          let sx = cos(a) * s.rOuter;
+          let sy = sin(a) * s.rOuter;
+          vertex(sx, sy);
+          sx = cos(a + halfAngle) * s.rInner;
+          sy = sin(a + halfAngle) * s.rInner;
+          vertex(sx, sy);
+        }
+        endShape(CLOSE);
+        pop();
+      }
+
+      // plus shape
+      function drawPlusShape(s) {
+        push();
+        translate(s.x, s.y);
+        fill(s.col);
+        noStroke();
+        const t = s.size / 3;
+        const l = s.size;
+        rect(-t / 2, -l, t, 2 * l);
+        rect(-l, -t / 2, 2 * l, t);
+        pop();
+      }
+
 
       // Ghost shapes drawing (from other player)
       function drawGhost(shapes) {
@@ -198,8 +291,9 @@
         });
       }
 
-      // Update sound parameters for DJ based on shape positions
+      // Update audio parameters for DJ based on shape positions
       function updateAudioFromShapes() {
+        // FIX: guard when audio/FX not ready
         if (!loopSound || !loopSound.isLoaded() || !reverbFX || !delayFX || !resonanceFX) return;
 
         let volume = map(tri.y, height - margin, margin, 0, 4, true);
@@ -213,18 +307,13 @@
         resonanceFX.res(resonance);
       }
 
-      // Update visual effect parameters for VJ based on shape positions
-      function updateVisualFromShapes(shapes) {
-        let p = map(shapes[0].y, height - margin, margin, 0, 1, true); 
-        let s = map(shapes[1].y, margin, height - margin, 0, 1, true); 
-        let sp = map(shapes[2].x, margin, width - margin, 0, 1, true); 
-        let ch = map(shapes[3].x, margin, width - margin, 0, 1, true); 
+      // Visual effect drawing for VJ (radial wave)
+      function drawRadialWaveCrazy() {
+        let p = map(tri.y, height - margin, margin, 0, 1, true); // power
+        let s = map(cir.y, margin, height - margin, 0, 1, true); // softness
+        let sp = map(star.x, margin, width - margin, 0, 1, true); // speed
+        let ch = map(plus.x, margin, width - margin, 0, 1, true); // chaos
 
-        drawRadialWaveCrazy(p, s, sp, ch);
-      }
-
-      // Visual effect drawing for shared wave
-      function drawRadialWaveCrazy(p, s, sp, ch) {
         let t = frameCount * (0.005 + sp * 0.25);
         let spacing = map(s, 0, 1, 26, 8);
         let dotSize = map(s, 0, 1, 2, 7);
@@ -277,6 +366,7 @@
         colorMode(RGB, 255);
       }
 
+      // Mouse interaction: drag controllers
       function mousePressed() {
         if (hitCircle(cir, mouseX, mouseY)) {
           draggedShape = cir;

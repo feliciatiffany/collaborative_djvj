@@ -40,7 +40,7 @@ wss.on('connection', (socket) => {
 
     // Telling the server what to do when it receives a new message on that connection
     socket.on('message', (data) => {
-        console.log('Received: ', data.toString());
+       // console.log('Received: ', data.toString());
 
         // Go through all of the clients
         wss.clients.forEach((client) => {

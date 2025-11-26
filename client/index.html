@@ -6,60 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/addons/p5.sound.min.js"></script>
-    <style>
-      html, body {
-        margin: 0;
-        height: 100%;
-        background: #000;
-        color: #fff;
-        font-family: system-ui, sans-serif;
-      }
-      #topbar {
-        position: fixed;
-        left: 0;
-        right: 0;
-        top: 0;
-        height: 42px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        padding: 0 12px;
-        border-bottom: 1px solid #222;
-        z-index: 10;
-        background: #000;
-      }
-      #status {
-        opacity: .8;
-      }
-      #role {
-        padding: 2px 8px;
-        background: #333;
-        border-radius: 4px;
-      }
-      #startAudio {
-        position: fixed;
-        right: 12px;
-        top: 50px;
-        z-index: 20;
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: 1px solid #444;
-        background: #0b4b8b;
-        color: #fff;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      #startAudio:hover {
-        background: #0d5fb8;
-      }
-      #app {
-        position: absolute;
-        top: 42px;
-        bottom: 0;
-        left: 0;
-        right: 0;
-      }
-    </style>
+    
   </head>
   <body>
     <div id="topbar">
@@ -70,9 +17,9 @@
     <div id="app"></div>
     
     <script>
-      // WebSocket connection - change to your server URL
-      let ws = new WebSocket('ws://localhost:3000');
-      // For production: let ws = new WebSocket('wss://collaborative-djvj.onrender.com');
+      // WebSocket connection 
+      // let ws = new WebSocket('ws://localhost:3000');
+    let ws = new WebSocket('wss://collaborative-djvj.onrender.com');
 
       const roleEl = document.getElementById('role');
       const statusEl = document.getElementById('status');

@@ -4,16 +4,15 @@ const { WebSocketServer } = require('ws');
 const express = require('express');
 const path = require('path');
 
-// Creating an Express app to serve static files
 const app = express();
 
 // Serve static files from the 'assets' folder (including audio)
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-// Creating an HTTP Server
+//HTTP Server
 const server = http.createServer(app);
 
-// Creating a WebSocket Server to allow "persistent connection"
+// Creating a WebSocket Server 
 const wss = new WebSocketServer({ server });
 
 // Tracking connected players and their roles
@@ -32,7 +31,7 @@ wss.on('connection', (socket) => {
         playerRole = null; // No more players can join
     }
 
-    // Send role assignment to the client
+    // Send role assignment to the client index.html see
     socket.send(JSON.stringify({ type: 'assign', role: playerRole }));
 
     // Add the player to the list

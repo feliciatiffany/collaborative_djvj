@@ -83,6 +83,7 @@
           console.error('Error processing WebSocket message:', error);  
         }
       };
+      
 
       // p5.js setup
       function setup() {
@@ -164,22 +165,21 @@
       }
 
       // eser interaction to start audio
-      startAudioBtn.onclick = function () {
-        userStartAudio().then(() => {  
+       startAudioBtn.onclick = function () {
+        userStartAudio().then(() => {
           if (!loopSound || !loopSound.isLoaded()) {
             loadDJSound();
-            // send message to notify that the DJ started and VJ sound is ready
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({
-                type: 'vjsound',  
+                type: 'vjsound',
               }));
             }
           } else {
-            loopSound.loop();  
-            startAudioBtn.style.display = 'none';  
+            loopSound.loop();
+            startAudioBtn.style.display = 'none';
           }
         }).catch((e) => {
-          console.error('Audio unlock failed:', e);  
+          console.error('Audio unlock failed:', e);
         });
       };
 
